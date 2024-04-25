@@ -28,6 +28,7 @@ In the context of deploying Kubernetes clusters locally for the "AsciiArtify" st
 | **Disadvantages**          | Limited scalability; dependency on local hypervisors       | Limited production readiness; may require additional config| Limited community support; potential complexity           |
 
 ## Demonstration:
+![Demo](demo.gif)
 
 
 ## Conclusion:
