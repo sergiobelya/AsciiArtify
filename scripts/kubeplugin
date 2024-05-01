@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Define command-line arguments
+NS=$1
+RESOURCE_TYPE=$2
+if [ $RESOURCE_TYPE == no ]
+then RESOURCE_TYPE="node"
+fi
+if [ $RESOURCE_TYPE == po ]
+then RESOURCE_TYPE="pod"
+fi
+
+# Run semself for node and pod when second argument all
+if [ $RESOURCE_TYPE == all ]
+then
+  $0 $1 node
+  $0 $1 pod
+  exit 0
+fi
+
+# Prepare temporary file for table result
+TMP_RESULT_FILE=/tmp/kubeplugin_result
+echo 'Resource, Namespace, Name, CPU, CPU%, Memory, Memory%' > $TMP_RESULT_FILE
+
+# Retrieve resource usage statistics from Kubernetes
+kubectl top $RESOURCE_TYPE -n $NS | tail -n +2 | while read line
+do
+  # Extract CPU and memory usage from the output
+  NAME=$(echo $line | awk '{print $1}')
+  CPU=$(echo $line | awk '{print $2}')
+  if [ $RESOURCE_TYPE == node ]
+  then
+    CPU_P=$(echo $line | awk '{print $3}')
+    MEMORY=$(echo $line | awk '{print $4}')
+    MEMORY_P=$(echo $line | awk '{print $5}')
+  elif [ $RESOURCE_TYPE == pod ]
+  then
+    CPU_P='-'
+    MEMORY=$(echo $line | awk '{print $3}')
+    MEMORY_P='-'
+  else 
+    CPU_P='-'
+    MEMORY='n/a'
+    MEMORY_P='-'
+  fi
+  # Output the statistics to the console
+  # "Resource, Namespace, Name, CPU, CPU%, Memory, Memory%"
+  echo $RESOURCE_TYPE, $NS, $NAME, $CPU, $CPU_P, $MEMORY, $MEMORY_P >> $TMP_RESULT_FILE
+done
+
+# Show statistic as table
+cat $TMP_RESULT_FILE | column -t -s ', '
+
+# Remove temporary file
+unlink $TMP_RESULT_FILE
